@@ -3,165 +3,358 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Aim Trainer — Shooting Practice Game</title>
+  <title>Aim Trainer — Pro Trainer</title>
   <style>
     :root{
-      --bg:#0d1117; --panel:#161b22; --accent:#00b4d8; --muted:#a3b3c4; --easy:#22c55e; --medium:#fbbf24; --hard:#ef4444;
-      font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+      --bg1:#061018; --bg2:#0b2236; --panel:#0f1724; --accent:#00d4ff; --muted:#9fb0c8;
+      --easy:#22c55e; --medium:#f59e0b; --hard:#ef4444; --glass:rgba(255,255,255,0.04);
+      --card-radius:12px; font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial;
     }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:#f1f5f9;display:flex;justify-content:center;align-items:center;min-height:100vh}
-    .game-container{display:flex;flex-direction:column;align-items:center;width:100%;max-width:1000px;padding:20px}
-    .hud{display:flex;gap:15px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;font-size:15px}
-    .hud div{background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:8px}
-    .play-area{width:100%;max-width:800px;height:500px;background:var(--panel);border-radius:12px;position:relative;overflow:hidden;cursor:crosshair;box-shadow:0 0 15px rgba(0,0,0,0.5)}
-    .target{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;color:#fff;transition:transform 0.15s ease,opacity 0.2s ease}
-    .fade-in{animation:fadeIn 0.3s ease forwards}
-    @keyframes fadeIn{from{opacity:0;transform:scale(0.6);}to{opacity:0.9;transform:scale(1);}}
-    .spark{position:absolute;width:20px;height:20px;border-radius:50%;pointer-events:none;animation:sparkAnim 0.4s ease forwards}
-    @keyframes sparkAnim{from{opacity:1;transform:scale(1);}to{opacity:0;transform:scale(2);}}
-    .controls{margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-    button{padding:10px 15px;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:0.2s}
-    button:hover{opacity:0.9;transform:scale(1.05)}
-    .easy{background:var(--easy);color:#052e16}
-    .medium{background:var(--medium);color:#78350f}
-    .hard{background:var(--hard);color:#450a0a}
-    .stop{background:var(--accent);color:#001219}
-    .stats-box{margin-top:15px;text-align:center;font-size:14px;color:var(--muted)}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#e6f0fb}
+    .wrap{width:100%;max-width:1200px;padding:22px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:var(--card-radius);box-shadow:0 12px 40px rgba(2,6,23,0.6);padding:16px}
+
+    header{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+    .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7ae7ff);display:flex;align-items:center;justify-content:center;color:#022;font-weight:800;box-shadow:0 6px 20px rgba(0,212,255,0.12)}
+    h1{font-size:18px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    main{display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:12px}
+    @media(max-width:980px){main{grid-template-columns:1fr}}
+
+    .play-area{position:relative;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:10px;height:600px;overflow:hidden;border:1px solid rgba(255,255,255,0.03)}
+    .hud{position:absolute;left:12px;top:12px;display:flex;gap:8px;z-index:40}
+    .pill{background:var(--glass);padding:8px 10px;border-radius:10px;font-size:13px;color:var(--muted);backdrop-filter:blur(4px)}
+
+    .right-hud{position:absolute;right:12px;top:12px;display:flex;gap:8px;align-items:center}
+    .difficulty-badge{padding:6px 10px;border-radius:999px;font-weight:700;font-size:13px}
+
+    .target{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(2,6,23,0.6), inset 0 6px 18px rgba(255,255,255,0.02);transition:transform 140ms cubic-bezier(.2,.9,.3,1),opacity 220ms}
+    .target .ring{position:absolute;border-radius:50%;width:80%;height:80%;border:2px solid rgba(255,255,255,0.12);box-shadow:inset 0 1px 6px rgba(255,255,255,0.02)}
+    .fade-in{animation:fadeIn 260ms ease forwards}
+    @keyframes fadeIn{from{opacity:0;transform:scale(0.6);}to{opacity:0.95;transform:scale(1);}}
+
+    .float-score{position:absolute;font-weight:800;font-size:16px;pointer-events:none;transform:translateY(0);transition:transform 500ms ease,opacity 500ms ease}
+
+    .shake{animation:shakeAnim 350ms ease}
+    @keyframes shakeAnim{0%{transform:translate(0,0)}25%{transform:translate(-6px,3px)}50%{transform:translate(6px,-3px)}75%{transform:translate(-4px,2px)}100%{transform:translate(0,0)}}
+
+    .controls{display:flex;flex-direction:column;gap:10px}
+    .modes{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{padding:10px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
+    .btn:active{transform:translateY(2px)}
+    .btn-e{background:linear-gradient(90deg,var(--easy),#44d77a);color:#04260f}
+    .btn-m{background:linear-gradient(90deg,var(--medium),#fbc252);color:#4a2e07}
+    .btn-h{background:linear-gradient(90deg,var(--hard),#fb6b6b);color:#3b0a0a}
+    .btn-stop{background:linear-gradient(90deg,var(--accent),#7ae7ff);color:#022}
+
+    aside{display:flex;flex-direction:column;gap:12px}
+    .setting{background:var(--glass);padding:12px;border-radius:10px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type=range]{width:100%}
+    select,input[type=number],input[type=text]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit}
+
+    .small{font-size:13px;color:var(--muted)}
+
+    .leaderboard{display:flex;flex-direction:column;gap:6px}
+    .leaderboard .row{display:flex;justify-content:space-between;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.02)}
+
+    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(0deg,rgba(2,6,23,0.6),rgba(2,6,23,0.6));z-index:60;opacity:0;pointer-events:none;transition:opacity 220ms}
+    .modal.show{opacity:1;pointer-events:auto}
+    .modal .box{background:linear-gradient(180deg,#07101b,#071428);padding:20px;border-radius:12px;width:420px}
+
+    .tiny{font-size:12px;color:var(--muted)}
   </style>
 </head>
 <body>
-  <div class="game-container">
-    <div class="hud">
-      <div>Score: <span id="score">0</span></div>
-      <div>Shots: <span id="shots">0</span></div>
-      <div>Hits: <span id="hits">0</span></div>
-      <div>Accuracy: <span id="accuracy">0%</span></div>
-      <div>Best Score: <span id="bestScore">0</span></div>
-    </div>
+  <div class="wrap card">
+    <header>
+      <div class="logo">AT</div>
+      <div>
+        <h1>Aim Trainer — Pro</h1>
+        <p class="lead">Pop sound on hit, particle bursts, screen shake, custom presets, endless mode, leaderboard, export sessions.</p>
+      </div>
+    </header>
 
-    <div class="play-area" id="playArea"></div>
+    <main>
+      <section class="play-area card" id="playArea">
+        <div class="hud">
+          <div class="pill">Score: <strong id="score">0</strong></div>
+          <div class="pill">Shots: <strong id="shots">0</strong></div>
+          <div class="pill">Hits: <strong id="hits">0</strong></div>
+          <div class="pill">Acc: <strong id="accuracy">0%</strong></div>
+        </div>
+        <div class="right-hud">
+          <div class="pill small">Time: <strong id="timer">0s</strong></div>
+          <div id="modeBadge" class="difficulty-badge pill">Idle</div>
+        </div>
+      </section>
 
-    <div class="controls">
-      <button class="easy" id="easyBtn">Easy</button>
-      <button class="medium" id="mediumBtn">Medium</button>
-      <button class="hard" id="hardBtn">Hard</button>
-      <button class="stop" id="stopBtn">Stop</button>
-    </div>
+      <aside>
+        <div class="setting">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>Modes & Controls</strong>
+            <div class="small">Best: <span id="bestScore">0</span></div>
+          </div>
+          <div class="modes">
+            <button id="easyBtn" class="btn btn-e">Easy</button>
+            <button id="mediumBtn" class="btn btn-m">Medium</button>
+            <button id="hardBtn" class="btn btn-h">Hard</button>
+            <button id="endlessBtn" class="btn btn-stop">Endless</button>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button id="stopBtn" class="btn btn-stop">Stop</button>
+            <button id="exportSessionBtn" class="btn">Export Sessions</button>
+          </div>
+        </div>
 
-    <div class="stats-box" id="statsBox">Choose difficulty to start your training session.</div>
+        <div class="setting">
+          <label>Session length (seconds)</label>
+          <input id="sessionLen" type="number" value="30" min="5" max="600">
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <label style="flex:1">Target size</label>
+            <input id="sizeRange" type="range" min="20" max="120" value="50">
+          </div>
+        </div>
+
+        <div class="setting">
+          <label>Custom Presets</label>
+          <input id="presetName" type="text" placeholder="Preset name (e.g. 'Pro')" />
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="savePreset" class="btn">Save Preset</button>
+            <select id="presetList"></select>
+            <button id="loadPreset" class="btn">Load</button>
+          </div>
+          <div class="tiny">Presets store size, session length and selected mode.</div>
+        </div>
+
+        <div class="setting">
+          <div style="display:flex;justify-content:space-between"><label>Sound</label><button id="muteBtn" class="btn">Mute</button></div>
+          <div style="display:flex;justify-content:space-between;margin-top:10px"><label>Leaderboard</label>
+            <select id="leaderboardMode"><option value="local">Local</option><option value="online">Online (placeholder)</option></select></div>
+          <div class="leaderboard" id="leaderboardBox" style="margin-top:8px"></div>
+        </div>
+      </aside>
+    </main>
   </div>
 
+  <div id="summaryModal" class="modal">
+    <div class="box">
+      <h3>Session Summary</h3>
+      <p id="summaryText">You scored 0 points.</p>
+      <div style="display:flex;gap:8px;justify-content:space-between;margin-top:12px;align-items:center">
+        <div>
+          <label class="tiny">Save to leaderboard as:</label>
+          <input id="playerName" type="text" placeholder="Your name" style="margin-left:8px;padding:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit" />
+        </div>
+        <div>
+          <button id="saveScoreBtn" class="btn btn-e">Save Score</button>
+          <button id="closeModal" class="btn btn-stop">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- audio assets -->
   <audio id="hitSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2b1a49b7e2.mp3?filename=click-124467.mp3" preload="auto"></audio>
+  <audio id="popSound" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_6b6d0b2e9f.mp3?filename=pop-6312.mp3" preload="auto"></audio>
   <audio id="missSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_3c50bffb52.mp3?filename=error-126627.mp3" preload="auto"></audio>
 
   <script>
-    const playArea=document.getElementById('playArea');
-    const scoreEl=document.getElementById('score');
-    const shotsEl=document.getElementById('shots');
-    const hitsEl=document.getElementById('hits');
-    const accuracyEl=document.getElementById('accuracy');
-    const bestScoreEl=document.getElementById('bestScore');
-    const statsBox=document.getElementById('statsBox');
-    const hitSound=document.getElementById('hitSound');
-    const missSound=document.getElementById('missSound');
+    // Elements
+    const playArea = document.getElementById('playArea');
+    const scoreEl = document.getElementById('score');
+    const shotsEl = document.getElementById('shots');
+    const hitsEl = document.getElementById('hits');
+    const accuracyEl = document.getElementById('accuracy');
+    const timerEl = document.getElementById('timer');
+    const modeBadge = document.getElementById('modeBadge');
+    const bestScoreEl = document.getElementById('bestScore');
+    const sessionLenInput = document.getElementById('sessionLen');
+    const sizeRange = document.getElementById('sizeRange');
+    const muteBtn = document.getElementById('muteBtn');
+    const presetName = document.getElementById('presetName');
+    const savePresetBtn = document.getElementById('savePreset');
+    const presetList = document.getElementById('presetList');
+    const loadPresetBtn = document.getElementById('loadPreset');
+    const leaderboardBox = document.getElementById('leaderboardBox');
+    const leaderboardMode = document.getElementById('leaderboardMode');
 
-    let score=0,shots=0,hits=0,running=false,mode='easy',spawnTimer;
+    const summaryModal = document.getElementById('summaryModal');
+    const summaryText = document.getElementById('summaryText');
+    const closeModal = document.getElementById('closeModal');
+    const saveScoreBtn = document.getElementById('saveScoreBtn');
+    const playerName = document.getElementById('playerName');
+    const exportSessionBtn = document.getElementById('exportSessionBtn');
 
-    const best=JSON.parse(localStorage.getItem('aim_best')||'{}');
-    if(best.bestScore)bestScoreEl.textContent=best.bestScore;
+    const hitSound = document.getElementById('hitSound');
+    const popSound = document.getElementById('popSound');
+    const missSound = document.getElementById('missSound');
 
-    const modeSettings={
-      easy:{size:80,interval:1000,color:'var(--easy)'},
-      medium:{size:50,interval:700,color:'var(--medium)'},
-      hard:{size:30,interval:250,color:'var(--hard)'} 
+    // State
+    let score = 0, shots = 0, hits = 0, running = false, mode = 'idle';
+    let spawnTimer = null, countdownTimer = null, sessionEndAt = 0;
+    let muted = false, streak = 0;
+    let sessions = JSON.parse(localStorage.getItem('aim_sessions') || '[]');
+
+    // Best stats
+    const best = JSON.parse(localStorage.getItem('aim_best') || '{}');
+    if(best.bestScore) bestScoreEl.textContent = best.bestScore;
+
+    const presets = {
+      easy:   { size: 80, interval: 1000, life: 1500, color: 'var(--easy)' },
+      medium: { size: 50, interval: 700, life: 1100, color: 'var(--medium)' },
+      hard:   { size: 32, interval: 250, life: 450,  color: 'var(--hard)' }
     };
 
+    // Helpers
     function updateHUD(){
-      scoreEl.textContent=score;
-      shotsEl.textContent=shots;
-      hitsEl.textContent=hits;
-      accuracyEl.textContent=shots?Math.round((hits/shots)*100)+'%':'0%';
+      scoreEl.textContent = score;
+      shotsEl.textContent = shots;
+      hitsEl.textContent = hits;
+      accuracyEl.textContent = shots ? Math.round((hits/shots)*100) + '%' : '0%';
     }
 
-    function createSpark(x,y,color){
-      const spark=document.createElement('div');
-      spark.className='spark';
-      spark.style.left=x+'px';spark.style.top=y+'px';
-      spark.style.background=color;
-      playArea.appendChild(spark);
-      setTimeout(()=>spark.remove(),400);
+    function showFloat(x,y,text,color){
+      const el = document.createElement('div');
+      el.className = 'float-score'; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.color = color; el.textContent = text;
+      playArea.appendChild(el);
+      requestAnimationFrame(()=>{ el.style.transform = 'translateY(-36px)'; el.style.opacity = '1'; });
+      setTimeout(()=>el.style.opacity='0',420); setTimeout(()=>el.remove(),900);
     }
 
-    function spawnTarget(){
-      const settings=modeSettings[mode];
-      const size=settings.size;
-      const target=document.createElement('div');
-      target.className='target fade-in';
-      target.style.width=`${size}px`;
-      target.style.height=`${size}px`;
-      target.style.background=settings.color;
-      target.style.left=Math.random()*(playArea.clientWidth-size)+'px';
-      target.style.top=Math.random()*(playArea.clientHeight-size)+'px';
-      playArea.appendChild(target);
-
-      target.addEventListener('mousedown',e=>{
-        e.stopPropagation();
-        hits++;
-        score+=10;
-        hitSound.currentTime=0;hitSound.play();
-        createSpark(e.offsetX+target.offsetLeft,e.offsetY+target.offsetTop,settings.color);
-        target.style.opacity=0;
-        target.style.transform='scale(1.4)';
-        setTimeout(()=>target.remove(),150);
-        updateHUD();
-      });
-
-      setTimeout(()=>{if(target.parentElement)target.remove();},settings.interval*1.2);
-    }
-
-    function startGame(selectedMode){
-      if(running)return;
-      mode=selectedMode;
-      running=true;
-      score=0;shots=0;hits=0;
-      updateHUD();
-      statsBox.textContent=`${mode.toUpperCase()} MODE - Click the targets!`;
-      spawnLoop();
-    }
-
-    function spawnLoop(){
-      if(!running)return;
-      spawnTarget();
-      const interval=modeSettings[mode].interval;
-      spawnTimer=setTimeout(spawnLoop,interval);
-    }
-
-    function stopGame(){
-      running=false;
-      clearTimeout(spawnTimer);
-      playArea.innerHTML='';
-      const accuracy=shots?Math.round((hits/shots)*100):0;
-      statsBox.textContent=`Session ended — Score: ${score}, Accuracy: ${accuracy}%`;
-      const prev=JSON.parse(localStorage.getItem('aim_best')||'{}');
-      if(!prev.bestScore||score>prev.bestScore){
-        prev.bestScore=score;
-        localStorage.setItem('aim_best',JSON.stringify(prev));
-        bestScoreEl.textContent=score;
+    function particleBurst(x,y,color,count=10){
+      for(let i=0;i<count;i++){
+        const p = document.createElement('div'); p.style.position='absolute'; p.style.left = (x - 6) + 'px'; p.style.top = (y - 6) + 'px';
+        const size = 6 + Math.round(Math.random()*8); p.style.width = p.style.height = size + 'px'; p.style.borderRadius='50%'; p.style.background = color; p.style.pointerEvents='none';
+        p.style.opacity = 1; p.style.transform = 'translate(0,0)'; p.style.transition = 'transform 600ms cubic-bezier(.2,.9,.3,1),opacity 600ms';
+        playArea.appendChild(p);
+        const ang = Math.random()*Math.PI*2; const dist = 30 + Math.random()*80;
+        requestAnimationFrame(()=>{ p.style.transform = `translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px) scale(0.6)`; p.style.opacity = 0; });
+        setTimeout(()=>p.remove(),650);
       }
     }
 
-    playArea.addEventListener('mousedown',()=>{
-      if(!running)return;
-      shots++;
-      missSound.currentTime=0;missSound.play();
-      updateHUD();
+    function shakeScreen(){
+      playArea.classList.add('shake');
+      setTimeout(()=>playArea.classList.remove('shake'),360);
+    }
+
+    function saveSessionRecord(s){ sessions.unshift(s); localStorage.setItem('aim_sessions', JSON.stringify(sessions.slice(0,200))); }
+
+    // spawn target
+    function spawnTarget(preset){
+      const userSize = +sizeRange.value;
+      const size = userSize || preset.size;
+      const el = document.createElement('div'); el.className='target fade-in'; el.style.width = size + 'px'; el.style.height = size + 'px'; el.style.background = preset.color;
+      el.style.backgroundImage = 'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), transparent 30%)';
+      const maxX = playArea.clientWidth - size; const maxY = playArea.clientHeight - size;
+      const x = Math.max(6, Math.random()*maxX); const y = Math.max(6, Math.random()*maxY);
+      el.style.left = x + 'px'; el.style.top = y + 'px';
+      const ring = document.createElement('div'); ring.className='ring'; el.appendChild(ring);
+      playArea.appendChild(el);
+
+      // life timer
+      const lifeT = preset.life;
+      const removeTimeout = setTimeout(()=>{ if(el.parentElement) el.remove(); }, lifeT);
+
+      el.addEventListener('mousedown', (ev) => {
+        ev.stopPropagation(); clearTimeout(removeTimeout);
+        hits++; score += Math.max(5, Math.round(100/size)); streak++;
+        updateHUD();
+        if(!muted){ try{ hitSound.currentTime=0; popSound.currentTime=0; popSound.play(); }catch(e){} }
+        const cx = x + size/2; const cy = y + size/2;
+        showFloat(cx, cy, '+' + Math.max(5, Math.round(100/size)), '#fff');
+        particleBurst(cx, cy, preset.color, 14);
+        el.style.transform = 'scale(1.35)'; el.style.opacity = 0; setTimeout(()=>el.remove(),220);
+
+        // screen shake on streaks
+        if(streak>0 && streak%5===0){ shakeScreen(); }
+      });
+
+      return el;
+    }
+
+    // spawn loop
+    function startSpawn(){
+      if(!running) return; const preset = presets[mode]; spawnTarget(preset);
+      // jitter + speed scaling with streak
+      const base = Math.max(60, Math.round(preset.interval * (0.7 + Math.random()*0.8)));
+      const speedFactor = 1 - Math.min(0.5, streak*0.02);
+      const next = Math.max(50, Math.round(base * speedFactor));
+      spawnTimer = setTimeout(startSpawn, next);
+    }
+
+    function startSession(selectedMode, endless=false){
+      if(running) return; mode = selectedMode; running = true; score = 0; shots = 0; hits = 0; streak = 0; updateHUD();
+      modeBadge.textContent = mode.toUpperCase(); modeBadge.style.background = presets[mode].color;
+      const len = endless ? null : Math.max(5, Math.min(3600, +sessionLenInput.value || 30));
+      if(len){ let remaining = len; timerEl.textContent = remaining + 's'; sessionEndAt = Date.now() + len*1000; countdownTimer = setInterval(()=>{ remaining = Math.max(0, Math.ceil((sessionEndAt - Date.now())/1000)); timerEl.textContent = remaining + 's'; if(remaining<=0) endSession(); }, 250); } else { timerEl.textContent = '∞'; }
+      startSpawn();
+    }
+
+    function endSession(){
+      if(!running) return; running = false; mode = 'idle'; clearTimeout(spawnTimer); clearInterval(countdownTimer); sessionEndAt = 0; modeBadge.textContent = 'Idle'; modeBadge.style.background='transparent';
+      // capture summary
+      const accuracy = shots ? Math.round((hits/shots)*100) : 0;
+      const s = { score, hits, shots, accuracy, mode, len: sessionLenInput.value || 'endless', ts: new Date().toISOString() };
+      saveSessionRecord(s);
+      // update bests
+      const prev = JSON.parse(localStorage.getItem('aim_best') || '{}'); if(!prev.bestScore || score > prev.bestScore) prev.bestScore = score; if(!prev.bestAcc || accuracy > prev.bestAcc) prev.bestAcc = accuracy; localStorage.setItem('aim_best', JSON.stringify(prev)); bestScoreEl.textContent = prev.bestScore || 0;
+      // show modal
+      summaryText.textContent = `Score: ${score} — Hits: ${hits} — Shots: ${shots} — Accuracy: ${accuracy}%`;
+      summaryModal.classList.add('show');
+      document.querySelectorAll('.target').forEach(t=>t.remove());
+    }
+
+    // play area miss
+    playArea.addEventListener('mousedown', (ev)=>{ if(!running) return; shots++; streak = 0; updateHUD(); if(!muted){ try{ missSound.currentTime=0; missSound.play(); }catch(e){} } showFloat(ev.offsetX, ev.offsetY, '-1', '#ffb3b3'); });
+
+    // controls
+    document.getElementById('easyBtn').addEventListener('click', ()=> startSession('easy'));
+    document.getElementById('mediumBtn').addEventListener('click', ()=> startSession('medium'));
+    document.getElementById('hardBtn').addEventListener('click', ()=> startSession('hard'));
+    document.getElementById('endlessBtn').addEventListener('click', ()=> startSession('medium', true)); // endless uses medium preset by default
+    document.getElementById('stopBtn').addEventListener('click', ()=> endSession());
+
+    muteBtn.addEventListener('click', ()=>{ muted = !muted; muteBtn.textContent = muted ? 'Unmute' : 'Mute'; });
+
+    // presets (save/load)
+    function refreshPresetList(){ const list = JSON.parse(localStorage.getItem('aim_presets')||'{}'); presetList.innerHTML=''; for(const k in list){ const opt = document.createElement('option'); opt.value=k; opt.textContent=k; presetList.appendChild(opt);} }
+    savePresetBtn.addEventListener('click', ()=>{ const name = (presetName.value||'Preset').trim(); if(!name) return alert('Enter preset name'); const data = JSON.parse(localStorage.getItem('aim_presets')||'{}'); data[name] = { size: +sizeRange.value, sessionLen: +sessionLenInput.value, mode }; localStorage.setItem('aim_presets', JSON.stringify(data)); refreshPresetList(); presetName.value=''; });
+    loadPresetBtn.addEventListener('click', ()=>{ const key = presetList.value; if(!key) return; const data = JSON.parse(localStorage.getItem('aim_presets')||'{}'); const p = data[key]; if(!p) return; sizeRange.value = p.size; sessionLenInput.value = p.sessionLen; // if preset saved a mode, start it
+      if(p.mode) startSession(p.mode); });
+    refreshPresetList();
+
+    // leaderboard (local)
+    function getLocalLeaderboard(){ return JSON.parse(localStorage.getItem('aim_leaderboard')||'[]'); }
+    function saveToLocalLeaderboard(name,score){ const lb = getLocalLeaderboard(); lb.push({name,score,ts:new Date().toISOString()}); lb.sort((a,b)=>b.score-a.score); localStorage.setItem('aim_leaderboard', JSON.stringify(lb.slice(0,50))); renderLeaderboard(); }
+    function renderLeaderboard(){ const mode = leaderboardMode.value; leaderboardBox.innerHTML=''; if(mode==='online'){ const el=document.createElement('div'); el.className='tiny'; el.textContent='Online leaderboard requires a server — not configured in this demo.'; leaderboardBox.appendChild(el); return;} const lb = getLocalLeaderboard(); if(lb.length===0){ const el=document.createElement('div'); el.className='tiny'; el.textContent='No scores yet. Play a session to add your score.'; leaderboardBox.appendChild(el); return;} lb.slice(0,10).forEach((r,i)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML = `<div>${i+1}. ${r.name}</div><div>${r.score}</div>`; leaderboardBox.appendChild(row); }); }
+    renderLeaderboard();
+
+    saveScoreBtn.addEventListener('click', ()=>{ const name = (playerName.value||'Player').trim(); saveToLocalLeaderboard(name, score); summaryModal.classList.remove('show'); playerName.value=''; });
+    closeModal.addEventListener('click', ()=>{ summaryModal.classList.remove('show'); });
+
+    // export sessions (CSV + JSON)
+    exportSessionBtn.addEventListener('click', ()=>{
+      const s = JSON.parse(localStorage.getItem('aim_sessions')||'[]'); if(s.length===0) return alert('No sessions to export');
+      // JSON
+      const blobJson = new Blob([JSON.stringify(s, null, 2)], {type:'application/json'});
+      const urlJson = URL.createObjectURL(blobJson);
+      const a1 = document.createElement('a'); a1.href = urlJson; a1.download = 'aim_sessions_'+Date.now()+'.json'; a1.click(); URL.revokeObjectURL(urlJson);
+      // CSV
+      const keys = ['ts','mode','score','hits','shots','accuracy','len'];
+      const csvRows = [keys.join(',')];
+      for(const r of s){ csvRows.push(keys.map(k=>`"${(r[k]||'').toString().replace(/"/g,'""')}"`).join(',')); }
+      const blobCsv = new Blob([csvRows.join('\n')], {type:'text/csv'});
+      const urlCsv = URL.createObjectURL(blobCsv);
+      const a2 = document.createElement('a'); a2.href = urlCsv; a2.download = 'aim_sessions_'+Date.now()+'.csv'; a2.click(); URL.revokeObjectURL(urlCsv);
     });
 
-    document.getElementById('easyBtn').onclick=()=>startGame('easy');
-    document.getElementById('mediumBtn').onclick=()=>startGame('medium');
-    document.getElementById('hardBtn').onclick=()=>startGame('hard');
-    document.getElementById('stopBtn').onclick=()=>stopGame();
+    // initial HUD
+    updateHUD();
   </script>
 </body>
 </html>

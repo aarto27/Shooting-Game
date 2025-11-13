@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aim Trainer — Shooting Practice Game</title>
+  <style>
+    :root{
+      --bg:#0d1117; --panel:#161b22; --accent:#00b4d8; --muted:#a3b3c4; --easy:#22c55e; --medium:#fbbf24; --hard:#ef4444;
+      font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:#f1f5f9;display:flex;justify-content:center;align-items:center;min-height:100vh}
+    .game-container{display:flex;flex-direction:column;align-items:center;width:100%;max-width:1000px;padding:20px}
+    .hud{display:flex;gap:15px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;font-size:15px}
+    .hud div{background:rgba(255,255,255,0.05);padding:8px 12px;border-radius:8px}
+    .play-area{width:100%;max-width:800px;height:500px;background:var(--panel);border-radius:12px;position:relative;overflow:hidden;cursor:crosshair;box-shadow:0 0 15px rgba(0,0,0,0.5)}
+    .target{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;color:#fff;transition:transform 0.15s ease,opacity 0.2s ease}
+    .fade-in{animation:fadeIn 0.3s ease forwards}
+    @keyframes fadeIn{from{opacity:0;transform:scale(0.6);}to{opacity:0.9;transform:scale(1);}}
+    .spark{position:absolute;width:20px;height:20px;border-radius:50%;pointer-events:none;animation:sparkAnim 0.4s ease forwards}
+    @keyframes sparkAnim{from{opacity:1;transform:scale(1);}to{opacity:0;transform:scale(2);}}
+    .controls{margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+    button{padding:10px 15px;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:0.2s}
+    button:hover{opacity:0.9;transform:scale(1.05)}
+    .easy{background:var(--easy);color:#052e16}
+    .medium{background:var(--medium);color:#78350f}
+    .hard{background:var(--hard);color:#450a0a}
+    .stop{background:var(--accent);color:#001219}
+    .stats-box{margin-top:15px;text-align:center;font-size:14px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="hud">
+      <div>Score: <span id="score">0</span></div>
+      <div>Shots: <span id="shots">0</span></div>
+      <div>Hits: <span id="hits">0</span></div>
+      <div>Accuracy: <span id="accuracy">0%</span></div>
+      <div>Best Score: <span id="bestScore">0</span></div>
+    </div>
+
+    <div class="play-area" id="playArea"></div>
+
+    <div class="controls">
+      <button class="easy" id="easyBtn">Easy</button>
+      <button class="medium" id="mediumBtn">Medium</button>
+      <button class="hard" id="hardBtn">Hard</button>
+      <button class="stop" id="stopBtn">Stop</button>
+    </div>
+
+    <div class="stats-box" id="statsBox">Choose difficulty to start your training session.</div>
+  </div>
+
+  <audio id="hitSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_2b1a49b7e2.mp3?filename=click-124467.mp3" preload="auto"></audio>
+  <audio id="missSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_3c50bffb52.mp3?filename=error-126627.mp3" preload="auto"></audio>
+
+  <script>
+    const playArea=document.getElementById('playArea');
+    const scoreEl=document.getElementById('score');
+    const shotsEl=document.getElementById('shots');
+    const hitsEl=document.getElementById('hits');
+    const accuracyEl=document.getElementById('accuracy');
+    const bestScoreEl=document.getElementById('bestScore');
+    const statsBox=document.getElementById('statsBox');
+    const hitSound=document.getElementById('hitSound');
+    const missSound=document.getElementById('missSound');
+
+    let score=0,shots=0,hits=0,running=false,mode='easy',spawnTimer;
+
+    const best=JSON.parse(localStorage.getItem('aim_best')||'{}');
+    if(best.bestScore)bestScoreEl.textContent=best.bestScore;
+
+    const modeSettings={
+      easy:{size:80,interval:1000,color:'var(--easy)'},
+      medium:{size:50,interval:700,color:'var(--medium)'},
+      hard:{size:30,interval:250,color:'var(--hard)'} 
+    };
+
+    function updateHUD(){
+      scoreEl.textContent=score;
+      shotsEl.textContent=shots;
+      hitsEl.textContent=hits;
+      accuracyEl.textContent=shots?Math.round((hits/shots)*100)+'%':'0%';
+    }
+
+    function createSpark(x,y,color){
+      const spark=document.createElement('div');
+      spark.className='spark';
+      spark.style.left=x+'px';spark.style.top=y+'px';
+      spark.style.background=color;
+      playArea.appendChild(spark);
+      setTimeout(()=>spark.remove(),400);
+    }
+
+    function spawnTarget(){
+      const settings=modeSettings[mode];
+      const size=settings.size;
+      const target=document.createElement('div');
+      target.className='target fade-in';
+      target.style.width=`${size}px`;
+      target.style.height=`${size}px`;
+      target.style.background=settings.color;
+      target.style.left=Math.random()*(playArea.clientWidth-size)+'px';
+      target.style.top=Math.random()*(playArea.clientHeight-size)+'px';
+      playArea.appendChild(target);
+
+      target.addEventListener('mousedown',e=>{
+        e.stopPropagation();
+        hits++;
+        score+=10;
+        hitSound.currentTime=0;hitSound.play();
+        createSpark(e.offsetX+target.offsetLeft,e.offsetY+target.offsetTop,settings.color);
+        target.style.opacity=0;
+        target.style.transform='scale(1.4)';
+        setTimeout(()=>target.remove(),150);
+        updateHUD();
+      });
+
+      setTimeout(()=>{if(target.parentElement)target.remove();},settings.interval*1.2);
+    }
+
+    function startGame(selectedMode){
+      if(running)return;
+      mode=selectedMode;
+      running=true;
+      score=0;shots=0;hits=0;
+      updateHUD();
+      statsBox.textContent=`${mode.toUpperCase()} MODE - Click the targets!`;
+      spawnLoop();
+    }
+
+    function spawnLoop(){
+      if(!running)return;
+      spawnTarget();
+      const interval=modeSettings[mode].interval;
+      spawnTimer=setTimeout(spawnLoop,interval);
+    }
+
+    function stopGame(){
+      running=false;
+      clearTimeout(spawnTimer);
+      playArea.innerHTML='';
+      const accuracy=shots?Math.round((hits/shots)*100):0;
+      statsBox.textContent=`Session ended — Score: ${score}, Accuracy: ${accuracy}%`;
+      const prev=JSON.parse(localStorage.getItem('aim_best')||'{}');
+      if(!prev.bestScore||score>prev.bestScore){
+        prev.bestScore=score;
+        localStorage.setItem('aim_best',JSON.stringify(prev));
+        bestScoreEl.textContent=score;
+      }
+    }
+
+    playArea.addEventListener('mousedown',()=>{
+      if(!running)return;
+      shots++;
+      missSound.currentTime=0;missSound.play();
+      updateHUD();
+    });
+
+    document.getElementById('easyBtn').onclick=()=>startGame('easy');
+    document.getElementById('mediumBtn').onclick=()=>startGame('medium');
+    document.getElementById('hardBtn').onclick=()=>startGame('hard');
+    document.getElementById('stopBtn').onclick=()=>stopGame();
+  </script>
+</body>
+</html>
